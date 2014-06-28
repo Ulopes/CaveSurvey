@@ -203,22 +203,22 @@ public class PointActivity extends MainMenuActivity implements AzimuthChangedLis
 
             // up
             EditText up = (EditText) findViewById(R.id.point_up);
-            StringUtils.setNotNull(up, legEdited.getTop());
+            StringUtils.setNotNull(up, legEdited.getTopDistance());
             mReceiver.bindBTMeasures(up, Constants.Measures.up, false, null);
 
             // down
             EditText down = (EditText) findViewById(R.id.point_down);
-            StringUtils.setNotNull(down, legEdited.getDown());
+            StringUtils.setNotNull(down, legEdited.getDownDistance());
             mReceiver.bindBTMeasures(down, Constants.Measures.down, false, null);
 
             // left
             EditText left = (EditText) findViewById(R.id.point_left);
-            StringUtils.setNotNull(left, legEdited.getLeft());
+            StringUtils.setNotNull(left, legEdited.getLeftDistance());
             mReceiver.bindBTMeasures(left, Constants.Measures.left, false, null);
 
             // right
             EditText right = (EditText) findViewById(R.id.point_right);
-            StringUtils.setNotNull(right, legEdited.getRight());
+            StringUtils.setNotNull(right, legEdited.getRightDistance());
             mReceiver.bindBTMeasures(right, Constants.Measures.right, false, null);
 
             // distance
@@ -315,10 +315,11 @@ public class PointActivity extends MainMenuActivity implements AzimuthChangedLis
                             legEdited.setDistance(StringUtils.getFromEditTextNotNull(distance));
                             legEdited.setAzimuth(StringUtils.getFromEditTextNotNull(azimuth));
                             legEdited.setSlope(StringUtils.getFromEditTextNotNull(slope));
-                            legEdited.setTop(StringUtils.getFromEditTextNotNull(up));
-                            legEdited.setDown(StringUtils.getFromEditTextNotNull(down));
-                            legEdited.setLeft(StringUtils.getFromEditTextNotNull(left));
-                            legEdited.setRight(StringUtils.getFromEditTextNotNull(right));
+                            legEdited.populateLeftDistance(StringUtils.getFromEditTextNotNull(left));
+                            legEdited.populateRightDistance(StringUtils.getFromEditTextNotNull(right));
+                            legEdited.populateTopDistance(StringUtils.getFromEditTextNotNull(up));
+                            legEdited.populateDownDistance(StringUtils.getFromEditTextNotNull(down));
+
 
                             // save leg
                             getWorkspace().getDBHelper().getLegDao().update(legEdited);

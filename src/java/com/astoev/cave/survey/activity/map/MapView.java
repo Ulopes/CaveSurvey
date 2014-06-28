@@ -127,20 +127,12 @@ public class MapView extends View {
                         Point2D first;
 
                         if (processedLegs.size() == 0) {
-                            first = new Point2D(Float.valueOf(centerX), Float.valueOf(centerY), l.getLeft(), l.getRight(), MapUtilities.getAzimuthInDegrees(l.getAzimuth()));
+                            first = new Point2D(Float.valueOf(centerX), Float.valueOf(centerY), l.getLeftDistance(), l.getRightDistance(), MapUtilities.getAzimuthInDegrees(l.getAzimuth()));
                         } else {
                             // update previously created point with the correct values for left/right/up/down
                             first = mapPoints.get(l.getFromPoint().getId());
-                            if (l.getLeft() != null ) {
-                                first.setLeft(l.getLeft());
-                            } else {
-                                first.setLeft(null);
-                            }
-                            if (l.getRight() != null) {
-                                first.setRight(l.getRight());
-                            } else {
-                                first.setRight(null);
-                            }
+                            first.setLeft(l.getLeftDistance());
+                            first.setRight(l.getRightDistance());
                             if (l.getAzimuth() != null) {
                                 first.setAzimuth(MapUtilities.getAzimuthInDegrees(l.getAzimuth()));
                             } else {

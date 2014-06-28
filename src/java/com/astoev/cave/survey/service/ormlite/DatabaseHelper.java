@@ -1,7 +1,9 @@
 package com.astoev.cave.survey.service.ormlite;
 
 import android.content.Context;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteStatement;
 import android.util.Log;
 
 import com.astoev.cave.survey.Constants;
@@ -34,7 +36,8 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
 
     private static final int DATABASE_VERSION_1 = 1;
     private static final int DATABASE_VERSION_2 = 2;
-    private static final int DATABASE_VERSION_LATEST = 3;
+    private static final int DATABASE_VERSION_3 = 3;
+    private static final int DATABASE_VERSION_LATEST = 4;
     private static final String DATABASE_NAME = "CaveSurvey";
 
     private Dao<Leg, Integer> mLegDao;
@@ -101,33 +104,16 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
                 aSqLiteDatabase.beginTransaction();
 
                 if (aOldVersion < DATABASE_VERSION_2) {
-                    Log.i(Constants.LOG_TAG_DB, "Upgrading DB to V2");
-                    aSqLiteDatabase.execSQL("alter table legs add column middle_point_distance decimal default null");
-                    Log.i(Constants.LOG_TAG_DB, "Upgrade success");
+                    applyDBV2(aSqLiteDatabase);
                 }
 
-                if (aOldVersion < DATABASE_VERSION_LATEST) {
-                    Log.i(Constants.LOG_TAG_DB, "Upgrading DB to V3");
-                    aSqLiteDatabase.execSQL("alter table vectors add column gallery_id decimal default null");
-                    aSqLiteDatabase.execSQL("update vectors set gallery_id = " +
-                            "(select min(gallery_id) from legs where from_point_id = id)");
-
-                    aSqLiteDatabase.execSQL("alter table photos add column gallery_id decimal default null");
-                    aSqLiteDatabase.execSQL("update photos set gallery_id = " +
-                            "(select min(gallery_id) from legs where from_point_id = id)");
-
-                    aSqLiteDatabase.execSQL("alter table sketches add column gallery_id decimal default null");
-                    aSqLiteDatabase.execSQL("update sketches set gallery_id = " +
-                            "(select min(gallery_id) from legs where from_point_id = id)");
-
-                    aSqLiteDatabase.execSQL("alter table notes add column gallery_id decimal default null");
-                    aSqLiteDatabase.execSQL("update notes set gallery_id = " +
-                            "(select min(gallery_id) from legs where from_point_id = id)");
-
-                    aSqLiteDatabase.setTransactionSuccessful();
-
-                    Log.i(Constants.LOG_TAG_DB, "Upgrade success");
+                if (aOldVersion < DATABASE_VERSION_3) {
+                    applyDBV3(aSqLiteDatabase);
                 }
+
+//                if (aOldVersion < DATABASE_VERSION_LATEST) {
+//                    applyDBV4(aSqLiteDatabase);
+//                }
 
             } finally {
                 aSqLiteDatabase.endTransaction();
@@ -137,6 +123,94 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
         } else {
             Log.i(Constants.LOG_TAG_DB, "DB up to update");
         }
+    }
+
+    private void applyDBV4(SQLiteDatabase aSqLiteDatabase) {
+        Log.i(Constants.LOG_TAG_DB, "Upgrading DB to V4");
+        aSqLiteDatabase.execSQL("alter table legs add column left_vector_id decimal default null");
+        aSqLiteDatabase.execSQL("alter table legs add column right_vector_id decimal default null");
+        aSqLiteDatabase.execSQL("alter table legs add column up_vector_id decimal default null");
+        aSqLiteDatabase.execSQL("alter table legs add column down_vector_id decimal default null");
+
+        SQLiteStatement vectorInsert = aSqLiteDatabase.compileStatement("insert into vectors (id, point_id, gallery_id, distance)" +
+                " values((select max(id) from vectors) + 1, ?, ?, ?)");
+        SQLiteStatement legUpdate = aSqLiteDatabase.compileStatement("update legs set left_vector_id = ?, right_vector_id = ?," +
+                "top_vector_id = ?, down_vector_id = ? where id = ? and gallery_id = ?");
+        Cursor c = aSqLiteDatabase.rawQuery("select id, galleryid, left, right, top, down from legs", null);
+        while (c.moveToNext()) {
+
+            Long legId = c.getLong(0);
+            Long galleryId = c.getLong(1);
+
+            // left
+            vectorInsert.bindLong(0, legId);
+            vectorInsert.bindLong(1, galleryId);
+            vectorInsert.bindLong(2, c.getLong(2));
+            Long left_id = vectorInsert.executeInsert();
+
+            // right
+            vectorInsert.bindLong(0, legId);
+            vectorInsert.bindLong(1, galleryId);
+            vectorInsert.bindLong(2, c.getLong(3));
+            Long right_id = vectorInsert.executeInsert();
+
+            // top
+            vectorInsert.bindLong(0, legId);
+            vectorInsert.bindLong(1, galleryId);
+            vectorInsert.bindLong(2, c.getLong(4));
+            Long top_id = vectorInsert.executeInsert();
+
+            // down
+            vectorInsert.bindLong(0, legId);
+            vectorInsert.bindLong(1, galleryId);
+            vectorInsert.bindLong(2, c.getLong(5));
+            Long down_id = vectorInsert.executeInsert();
+
+            // update leg
+            legUpdate.bindLong(0, left_id);
+            legUpdate.bindLong(1, right_id);
+            legUpdate.bindLong(2, top_id);
+            legUpdate.bindLong(3, down_id);
+            legUpdate.bindLong(4, legId);
+            legUpdate.bindLong(5, galleryId);
+            legUpdate.execute();
+        }
+
+        aSqLiteDatabase.execSQL("alter table legs drop column left");
+        aSqLiteDatabase.execSQL("alter table legs drop column right");
+        aSqLiteDatabase.execSQL("alter table legs drop column up");
+        aSqLiteDatabase.execSQL("alter table legs drop column down");
+
+        Log.i(Constants.LOG_TAG_DB, "Upgrade success");
+    }
+
+    private void applyDBV3(SQLiteDatabase aSqLiteDatabase) {
+        Log.i(Constants.LOG_TAG_DB, "Upgrading DB to V3");
+        aSqLiteDatabase.execSQL("alter table vectors add column gallery_id decimal default null");
+        aSqLiteDatabase.execSQL("update vectors set gallery_id = " +
+                "(select min(gallery_id) from legs where from_point_id = id)");
+
+        aSqLiteDatabase.execSQL("alter table photos add column gallery_id decimal default null");
+        aSqLiteDatabase.execSQL("update photos set gallery_id = " +
+                "(select min(gallery_id) from legs where from_point_id = id)");
+
+        aSqLiteDatabase.execSQL("alter table sketches add column gallery_id decimal default null");
+        aSqLiteDatabase.execSQL("update sketches set gallery_id = " +
+                "(select min(gallery_id) from legs where from_point_id = id)");
+
+        aSqLiteDatabase.execSQL("alter table notes add column gallery_id decimal default null");
+        aSqLiteDatabase.execSQL("update notes set gallery_id = " +
+                "(select min(gallery_id) from legs where from_point_id = id)");
+
+        aSqLiteDatabase.setTransactionSuccessful();
+
+        Log.i(Constants.LOG_TAG_DB, "Upgrade success");
+    }
+
+    private void applyDBV2(SQLiteDatabase aSqLiteDatabase) {
+        Log.i(Constants.LOG_TAG_DB, "Upgrading DB to V2");
+        aSqLiteDatabase.execSQL("alter table legs add column middle_point_distance decimal default null");
+        Log.i(Constants.LOG_TAG_DB, "Upgrade success");
     }
 
     public Dao<Leg, Integer> getLegDao() {

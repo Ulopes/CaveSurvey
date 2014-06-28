@@ -310,20 +310,20 @@ public class ExcelExport {
 
     private void exportArroundMeasures(Leg l, Row legRow) throws SQLException {
         Cell left = legRow.createCell(CELL_LEFT);
-        if (l.getLeft() != null) {
-            left.setCellValue(StringUtils.floatToLabel(l.getLeft()));
+        if (l.getLeftDistance() != null) {
+            left.setCellValue(StringUtils.floatToLabel(l.getLeftDistance()));
         }
         Cell right = legRow.createCell(CELL_RIGHT);
-        if (l.getRight() != null) {
-            right.setCellValue(StringUtils.floatToLabel(l.getRight()));
+        if (l.getRightDistance() != null) {
+            right.setCellValue(StringUtils.floatToLabel(l.getRightDistance()));
         }
         Cell up = legRow.createCell(CELL_UP);
-        if (l.getTop() != null) {
-            up.setCellValue(StringUtils.floatToLabel(l.getTop()));
+        if (l.getTopDistance() != null) {
+            up.setCellValue(StringUtils.floatToLabel(l.getTopDistance()));
         }
         Cell down = legRow.createCell(CELL_DOWN);
-        if (l.getDown() != null) {
-            down.setCellValue(StringUtils.floatToLabel(l.getDown()));
+        if (l.getDownDistance() != null) {
+            down.setCellValue(StringUtils.floatToLabel(l.getDownDistance()));
         }
     }
 

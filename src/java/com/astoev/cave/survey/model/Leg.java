@@ -27,6 +27,10 @@ public class Leg implements Serializable {
     public static final String COLUMN_FROM_POINT = "from_point_id";
     public static final String COLUMN_TO_POINT = "to_point_id";
     public static final String COLUMN_GALLERY_ID = "gallery_id";
+    public static final String COLUMN_LEFT_VECTOR_ID = "left_vector_id";
+    public static final String COLUMN_RIGHT_VECTOR_ID = "right_vector_id";
+    public static final String COLUMN_TOP_VECTOR_ID = "top_vector_id";
+    public static final String COLUMN_DOWN_VECTOR_ID = "down_vector_id";
     public static final String COLUMN_MIDDLE_POINT_AT_DISTANCE = "middle_point_distance";
 
     @DatabaseField(generatedId = true, columnName = COLUMN_ID)
@@ -43,14 +47,14 @@ public class Leg implements Serializable {
     private Float mAzimuth;
     @DatabaseField(columnName = "slope")
     private Float mSlope;
-    @DatabaseField(columnName = "left")
-    private Float mLeft;
-    @DatabaseField(columnName = "right")
-    private Float mRight;
-    @DatabaseField(columnName = "top")
-    private Float mTop;
-    @DatabaseField(columnName = "down")
-    private Float mDown;
+    @DatabaseField(canBeNull = true, foreign = true, columnName = COLUMN_LEFT_VECTOR_ID)
+    private Vector mLeftVector;
+    @DatabaseField(canBeNull = true, foreign = true, columnName = COLUMN_RIGHT_VECTOR_ID)
+    private Vector mRightVector;
+    @DatabaseField(canBeNull = true, foreign = true, columnName = COLUMN_TOP_VECTOR_ID)
+    private Vector mTopVector;
+    @DatabaseField(canBeNull = true, foreign = true, columnName = COLUMN_DOWN_VECTOR_ID)
+    private Vector mDownVector;
     @DatabaseField(canBeNull = false, columnName = COLUMN_GALLERY_ID)
     private Integer mGalleryId;
     @DatabaseField(columnName = COLUMN_MIDDLE_POINT_AT_DISTANCE)
@@ -218,36 +222,36 @@ public class Leg implements Serializable {
         mSlope = aSlope;
     }
 
-    public Float getLeft() {
-        return mLeft;
+    public Vector getLeftVector() {
+        return mLeftVector;
     }
 
-    public void setLeft(Float aLeft) {
-        mLeft = aLeft;
+    public void setLeftVector(Vector leftVector) {
+        mLeftVector = leftVector;
     }
 
-    public Float getRight() {
-        return mRight;
+    public Vector getRightVector() {
+        return mRightVector;
     }
 
-    public void setRight(Float aRight) {
-        mRight = aRight;
+    public void setRightVector(Vector rightVector) {
+        mRightVector = rightVector;
     }
 
-    public Float getTop() {
-        return mTop;
+    public Vector getTopVector() {
+        return mTopVector;
     }
 
-    public void setTop(Float aTop) {
-        mTop = aTop;
+    public void setTopVector(Vector topVector) {
+        mTopVector = topVector;
     }
 
-    public Float getDown() {
-        return mDown;
+    public Vector getDownVector() {
+        return mDownVector;
     }
 
-    public void setDown(Float aDown) {
-        mDown = aDown;
+    public void setDownVector(Vector downVector) {
+        mDownVector = downVector;
     }
 
     public Integer getGalleryId() {
@@ -264,6 +268,58 @@ public class Leg implements Serializable {
 
     public void setMiddlePointDistance(Float aMiddlePointDistance) {
         mMiddlePointDistance = aMiddlePointDistance;
+    }
+
+    public Float getLeftDistance() {
+        return mLeftVector == null ? null : mLeftVector.getDistance();
+    }
+
+    public Float getRightDistance() {
+        return mRightVector == null ? null : mRightVector.getDistance();
+    }
+
+    public Float getTopDistance() {
+        return mTopVector == null ? null : mTopVector.getDistance();
+    }
+
+    public Float getDownDistance() {
+        return  mDownVector == null ? null : mDownVector.getDistance();
+    }
+
+    // side effect below, old vector deleted
+    private Vector getVectorWithUpdatedDistance(Vector aVector, Float aDistance) throws SQLException {
+        if (aDistance == null) {
+            if (aVector != null) {
+                DaoUtil.deleteVector(aVector);
+            }
+            return null;
+        } else {
+            if (aVector == null) {
+                Vector v = new Vector();
+                v.setGalleryId(mGalleryId);
+                v.setPoint(mFromPoint);
+                v.setDistance(aDistance);
+                return v;
+            }
+            aVector.setDistance(aDistance);
+            return aVector;
+        }
+    }
+
+    public void populateLeftDistance(Float aDistance) throws SQLException {
+        mLeftVector = getVectorWithUpdatedDistance(mLeftVector, aDistance);
+    }
+
+    public void populateRightDistance(Float aDistance) throws SQLException {
+        mRightVector = getVectorWithUpdatedDistance(mRightVector, aDistance);
+    }
+
+    public void populateTopDistance(Float aDistance) throws SQLException {
+        mTopVector = getVectorWithUpdatedDistance(mTopVector, aDistance);
+    }
+
+    public void populateDownDistance(Float aDistance) throws SQLException {
+        mDownVector = getVectorWithUpdatedDistance(mDownVector, aDistance);
     }
 
     /**
